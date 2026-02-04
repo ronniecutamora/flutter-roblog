@@ -4,28 +4,16 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
-import '../../features/posts/presentation/pages/home_page.dart';
-import '../../features/posts/presentation/pages/create_post_page.dart';
-import '../../features/posts/presentation/pages/edit_post_page.dart';
-import '../../features/posts/presentation/pages/post_detail_page.dart';
-import '../../features/posts/domain/entities/post.dart';
-import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/auth/presentation/pages/splash_page.dart';
 
-/// Configures the application's routing using [GoRouter].
+/// App router configuration using go_router.
 ///
-/// Handles:
-/// - Authentication-based redirects (login guard)
-/// - Route definitions for all app screens
-/// - Passing data between routes via [GoRouterState.extra]
-///
-/// Usage:
-/// ```dart
-/// MaterialApp.router(
-///   routerConfig: AppRouter.router,
-/// )
-/// ```
+/// For now, only auth routes are configured.
+/// Posts, comments, and profile routes will be added later.
 class AppRouter {
-  /// Global navigator key for accessing navigator state outside of context.
+  AppRouter._();
+
+  /// Global navigator key.
   static final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
   /// Returns the configured [GoRouter] instance.
@@ -33,97 +21,88 @@ class AppRouter {
 
   static final _router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/login',
-
-    /// Handles authentication redirects.
-    ///
-    /// - Redirects unauthenticated users to `/login`
-    /// - Redirects authenticated users away from auth pages to `/`
-    /// - Returns `null` to allow the navigation to proceed normally
+    initialLocation: '/splash',
     redirect: (context, state) {
       final isLoggedIn = Supabase.instance.client.auth.currentUser != null;
-      final isAuthRoute = state.matchedLocation == '/login' ||
-          state.matchedLocation == '/register';
+      final currentPath = state.matchedLocation;
+
+      // Allow splash to load
+      if (currentPath == '/splash') return null;
+
+      // Auth routes
+      final isAuthRoute = currentPath == '/login' || currentPath == '/register';
 
       // Not logged in and trying to access protected route
       if (!isLoggedIn && !isAuthRoute) return '/login';
 
-      // Logged in but trying to access auth routes
-      if (isLoggedIn && isAuthRoute) return '/';
+      // Logged in but on auth route - redirect to home
+      // For now, redirect back to login since home doesn't exist yet
+      if (isLoggedIn && isAuthRoute) return '/home';
 
-      // Allow navigation
       return null;
     },
-
     routes: [
-      /// Login page - entry point for unauthenticated users.
+      // Splash - initial route
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashPage(),
+      ),
+
+      // Login
       GoRoute(
         path: '/login',
-        name: 'login',
         builder: (context, state) => const LoginPage(),
       ),
 
-      /// Registration page - create new account.
+      // Register
       GoRoute(
         path: '/register',
-        name: 'register',
         builder: (context, state) => const RegisterPage(),
       ),
 
-      /// Home page - displays list of blog posts.
+      // Temporary home route for testing
       GoRoute(
-        path: '/',
-        name: 'home',
-        builder: (context, state) => const HomePage(),
-      ),
-
-      /// Create post page - form to create a new blog post.
-      GoRoute(
-        path: '/create-post',
-        name: 'createPost',
-        builder: (context, state) => const CreatePostPage(),
-      ),
-
-      /// Post detail page - displays full post with comments.
-      ///
-      /// Requires [Post] object passed via [GoRouterState.extra].
-      ///
-      /// Example:
-      /// ```dart
-      /// context.push('/post/${post.id}', extra: post);
-      /// ```
-      GoRoute(
-        path: '/post/:id',
-        name: 'postDetail',
-        builder: (context, state) {
-          final post = state.extra as Post;
-          return PostDetailPage(post: post);
-        },
-      ),
-
-      /// Edit post page - form to modify existing post.
-      ///
-      /// Requires [Post] object passed via [GoRouterState.extra].
-      ///
-      /// Example:
-      /// ```dart
-      /// context.push('/edit-post/${post.id}', extra: post);
-      /// ```
-      GoRoute(
-        path: '/edit-post/:id',
-        name: 'editPost',
-        builder: (context, state) {
-          final post = state.extra as Post;
-          return EditPostPage(post: post);
-        },
-      ),
-
-      /// Profile page - view and edit user profile.
-      GoRoute(
-        path: '/profile',
-        name: 'profile',
-        builder: (context, state) => const ProfilePage(),
+        path: '/home',
+        builder: (context, state) => const _TempHomePage(),
       ),
     ],
   );
+}
+
+/// Temporary home page for testing auth flow.
+///
+/// Will be replaced with actual HomePage in Step 7.
+class _TempHomePage extends StatelessWidget {
+  const _TempHomePage();
+
+  @override
+  Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Home (Temp)')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.check_circle, size: 64, color: Colors.green),
+            const SizedBox(height: 16),
+            const Text('Auth works!', style: TextStyle(fontSize: 24)),
+            const SizedBox(height: 8),
+            Text('Logged in as: ${user?.email ?? 'Unknown'}'),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () async {
+                await Supabase.instance.client.auth.signOut();
+                if (context.mounted) {
+                  GoRouter.of(context).go('/login');
+                }
+              },
+              child: const Text('Logout'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
