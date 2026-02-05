@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -8,46 +11,29 @@ import '../../../../core/errors/exceptions.dart';
 import '../models/post_model.dart';
 
 /// Contract for posts data operations.
-///
-/// Defines methods that interact with Supabase database and storage.
 abstract class PostsRemoteDataSource {
-  /// Fetches all posts ordered by creation date (newest first).
   Future<List<PostModel>> getPosts();
-
-  /// Fetches a single post by ID.
   Future<PostModel> getPostById(String id);
-
-  /// Creates a new post with optional image upload.
   Future<PostModel> createPost({
     required String title,
     required String content,
     String? imagePath,
   });
-
-  /// Updates an existing post with optional new image.
   Future<PostModel> updatePost({
     required String id,
     required String title,
     required String content,
     String? imagePath,
   });
-
-  /// Deletes a post by ID.
   Future<void> deletePost(String id);
 }
 
 /// Implementation of [PostsRemoteDataSource] using Supabase.
-///
-/// Handles:
-/// - CRUD operations on the `blogs` table
-/// - Image uploads to the `blog-images` storage bucket
 class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
   final SupabaseClient _client;
 
-  /// Creates a [PostsRemoteDataSourceImpl] with the given Supabase [client].
   PostsRemoteDataSourceImpl({required SupabaseClient client}) : _client = client;
 
-  /// Gets the current user ID or throws if not authenticated.
   String get _currentUserId {
     final user = _client.auth.currentUser;
     if (user == null) throw AppAuthException('Not authenticated');
@@ -95,7 +81,6 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
       final userId = _currentUserId;
       String? imageUrl;
 
-      // Upload image if provided
       if (imagePath != null) {
         imageUrl = await _uploadImage(imagePath, userId);
       }
@@ -130,18 +115,16 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
       final userId = _currentUserId;
       String? imageUrl;
 
-      // Upload new image if provided
       if (imagePath != null) {
         imageUrl = await _uploadImage(imagePath, userId);
       }
 
-      final updateData = {
+      final updateData = <String, dynamic>{
         'title': title,
         'content': content,
         'updated_at': DateTime.now().toIso8601String(),
       };
 
-      // Only update image_url if a new image was uploaded
       if (imageUrl != null) {
         updateData['image_url'] = imageUrl;
       }
@@ -164,37 +147,40 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
   @override
   Future<void> deletePost(String id) async {
     try {
-      await _client
-          .from(ApiEndpoints.blogsTable)
-          .delete()
-          .eq('id', id);
+      await _client.from(ApiEndpoints.blogsTable).delete().eq('id', id);
     } catch (e) {
       throw ServerException('Failed to delete post: $e');
     }
   }
 
-  /// Uploads an image to Supabase Storage and returns the public URL.
+  /// Uploads an image to Supabase Storage.
   ///
-  /// [localPath] - Path to the local image file
-  /// [userId] - User ID for organizing uploads
-  ///
-  /// Returns the public URL of the uploaded image.
-  Future<String> _uploadImage(String localPath, String userId) async {
+  /// Handles both web and mobile platforms.
+  Future<String> _uploadImage(String path, String userId) async {
     try {
-      final file = File(localPath);
-      final fileExt = localPath.split('.').last;
+      final fileExt = path.split('.').last;
       final fileName = '${const Uuid().v4()}.$fileExt';
       final storagePath = 'posts/$userId/$fileName';
 
-      await _client.storage
-          .from(ApiEndpoints.blogImagesBucket)
-          .upload(storagePath, file);
+      if (kIsWeb) {
+        // Web: read bytes from XFile
+        final xFile = XFile(path);
+        final bytes = await xFile.readAsBytes();
 
-      final imageUrl = _client.storage
+        await _client.storage
+            .from(ApiEndpoints.blogImagesBucket)
+            .uploadBinary(storagePath, bytes);
+      } else {
+        // Mobile: upload file directly
+        final file = File(path);
+        await _client.storage
+            .from(ApiEndpoints.blogImagesBucket)
+            .upload(storagePath, file);
+      }
+
+      return _client.storage
           .from(ApiEndpoints.blogImagesBucket)
           .getPublicUrl(storagePath);
-
-      return imageUrl;
     } catch (e) {
       throw ServerException('Failed to upload image: $e');
     }
