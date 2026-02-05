@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// ─── Auth ─────────────────────────────────────────────────────────────────────
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
@@ -8,6 +9,16 @@ import '../../features/auth/domain/usecases/login.dart';
 import '../../features/auth/domain/usecases/logout.dart';
 import '../../features/auth/domain/usecases/register.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
+
+// ─── Posts ────────────────────────────────────────────────────────────────────
+import '../../features/posts/data/datasources/posts_remote_datasource.dart';
+import '../../features/posts/data/repositories/posts_repository_impl.dart';
+import '../../features/posts/domain/repositories/posts_repository.dart';
+import '../../features/posts/domain/usecases/create_post.dart';
+import '../../features/posts/domain/usecases/delete_post.dart';
+import '../../features/posts/domain/usecases/get_posts.dart';
+import '../../features/posts/domain/usecases/update_post.dart';
+import '../../features/posts/presentation/bloc/posts_bloc.dart';
 
 /// Global service locator instance.
 final sl = GetIt.instance;
@@ -41,6 +52,34 @@ Future<void> init() async {
   // Data Source
   sl.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSourceImpl(client: sl()),
+  );
+
+  // ─── Posts Feature ──────────────────────────────────────────────────────────
+
+  // BLoC
+  sl.registerFactory(
+    () => PostsBloc(
+      getPosts: sl(),
+      createPost: sl(),
+      updatePost: sl(),
+      deletePost: sl(),
+    ),
+  );
+
+  // Use Cases
+  sl.registerLazySingleton(() => GetPosts(sl()));
+  sl.registerLazySingleton(() => CreatePost(sl()));
+  sl.registerLazySingleton(() => UpdatePost(sl()));
+  sl.registerLazySingleton(() => DeletePost(sl()));
+
+  // Repository
+  sl.registerLazySingleton<PostsRepository>(
+    () => PostsRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // Data Source
+  sl.registerLazySingleton<PostsRemoteDataSource>(
+    () => PostsRemoteDataSourceImpl(client: sl()),
   );
 
   // ─── External ───────────────────────────────────────────────────────────────
