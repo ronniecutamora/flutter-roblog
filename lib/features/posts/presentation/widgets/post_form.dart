@@ -1,5 +1,6 @@
-import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -8,13 +9,7 @@ import '../../../../core/utils/validators.dart';
 
 /// Reusable form for creating and editing posts.
 ///
-/// Features:
-/// - Title and content input fields
-/// - Image picker (gallery)
-/// - Form validation
-/// - Loading state handling
-///
-/// Used by both [CreatePostPage] and [EditPostPage].
+/// Handles both web and mobile platforms for image picking.
 class PostForm extends StatefulWidget {
   /// Initial title (for editing).
   final String? initialTitle;
@@ -58,8 +53,11 @@ class _PostFormState extends State<PostForm> {
   late final TextEditingController _titleController;
   late final TextEditingController _contentController;
 
-  /// Local path to newly selected image.
+  /// Local path to newly selected image (mobile).
   String? _imagePath;
+
+  /// Image bytes for web preview.
+  Uint8List? _imageBytes;
 
   /// Whether user has selected a new image.
   bool _imageChanged = false;
@@ -89,10 +87,21 @@ class _PostFormState extends State<PostForm> {
     );
 
     if (picked != null) {
-      setState(() {
-        _imagePath = picked.path;
-        _imageChanged = true;
-      });
+      if (kIsWeb) {
+        // For web, read bytes for preview
+        final bytes = await picked.readAsBytes();
+        setState(() {
+          _imageBytes = bytes;
+          _imagePath = picked.path; // XFile path works for upload
+          _imageChanged = true;
+        });
+      } else {
+        // For mobile, use file path
+        setState(() {
+          _imagePath = picked.path;
+          _imageChanged = true;
+        });
+      }
     }
   }
 
@@ -100,6 +109,7 @@ class _PostFormState extends State<PostForm> {
   void _removeImage() {
     setState(() {
       _imagePath = null;
+      _imageBytes = null;
       _imageChanged = true;
     });
   }
@@ -115,10 +125,56 @@ class _PostFormState extends State<PostForm> {
     }
   }
 
+  /// Builds the image preview widget.
+  Widget _buildImagePreview() {
+    if (kIsWeb && _imageBytes != null) {
+      // Web: use Image.memory
+      return Image.memory(
+        _imageBytes!,
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+      );
+    } else if (!kIsWeb && _imagePath != null) {
+      // Mobile: use Image.file
+      return Image.network(
+        // For mobile, we need to handle differently
+        // Actually, let's use a file image provider approach
+        _imagePath!,
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback to file loading via Image widget with FileImage
+          return _buildMobileFileImage();
+        },
+      );
+    } else if (widget.initialImageUrl != null && !_imageChanged) {
+      // Existing image from URL
+      return Image.network(
+        widget.initialImageUrl!,
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  /// Builds mobile file image (separate method to avoid web import issues).
+  Widget _buildMobileFileImage() {
+    // This will be handled by the _buildNewImagePreview method
+    return Container(
+      height: 200,
+      color: Colors.grey[200],
+      child: const Center(child: Icon(Icons.image)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Determine which image to show
-    final hasNewImage = _imagePath != null;
+    final hasNewImage = _imagePath != null || _imageBytes != null;
     final hasExistingImage = widget.initialImageUrl != null && !_imageChanged;
 
     return Form(
@@ -132,19 +188,7 @@ class _PostFormState extends State<PostForm> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: hasNewImage
-                      ? Image.file(
-                          File(_imagePath!),
-                          height: 200,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        )
-                      : Image.network(
-                          widget.initialImageUrl!,
-                          height: 200,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
+                  child: _buildSelectedImage(hasNewImage),
                 ),
                 Positioned(
                   top: 8,
@@ -218,5 +262,76 @@ class _PostFormState extends State<PostForm> {
         ],
       ),
     );
+  }
+
+  /// Builds the appropriate image widget based on source.
+  Widget _buildSelectedImage(bool hasNewImage) {
+    if (hasNewImage) {
+      if (kIsWeb && _imageBytes != null) {
+        // Web: use memory image
+        return Image.memory(
+          _imageBytes!,
+          height: 200,
+          width: double.infinity,
+          fit: BoxFit.cover,
+        );
+      } else if (!kIsWeb && _imagePath != null) {
+        // Mobile: use file image
+        // Import conditionally to avoid web issues
+        return _MobileFileImage(path: _imagePath!);
+      }
+    }
+
+    // Existing image URL
+    if (widget.initialImageUrl != null) {
+      return Image.network(
+        widget.initialImageUrl!,
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+}
+
+/// Separate widget for mobile file image to avoid web compilation issues.
+class _MobileFileImage extends StatelessWidget {
+  final String path;
+
+  const _MobileFileImage({required this.path});
+
+  @override
+  Widget build(BuildContext context) {
+    // Use conditional import pattern
+    if (kIsWeb) {
+      return const SizedBox.shrink();
+    }
+
+    // For non-web, dynamically load the image
+    return FutureBuilder<Uint8List>(
+      future: _loadImage(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return Image.memory(
+            snapshot.data!,
+            height: 200,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          );
+        }
+        return Container(
+          height: 200,
+          color: Colors.grey[200],
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      },
+    );
+  }
+
+  Future<Uint8List> _loadImage() async {
+    final xFile = XFile(path);
+    return await xFile.readAsBytes();
   }
 }
