@@ -26,9 +26,7 @@ class EditPostPage extends StatelessWidget {
       body: BlocConsumer<PostsBloc, PostsState>(
         listener: (context, state) {
           if (state is PostUpdated) {
-            Helpers.showSnackBar(context, 'Post updated!');
-            // Reload posts and go back
-            context.read<PostsBloc>().add(const LoadPostsEvent());
+            // Go back to detail page (which will show updated post)
             context.pop();
           } else if (state is PostsError) {
             Helpers.showSnackBar(context, state.message, isError: true);
