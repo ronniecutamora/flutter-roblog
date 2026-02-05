@@ -7,31 +7,22 @@ import 'config/router/app_router.dart';
 import 'core/constants/app_strings.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'features/posts/presentation/bloc/posts_bloc.dart';
 
 /// Application entry point.
 void main() async {
-  // 1. Mandatory for async work in main
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    // 2. Load the file FIRST
-    await dotenv.load(fileName: ".env");
-    
-    // 3. Initialize Supabase ONLY after load is done
-    await Supabase.initialize(
-      url: dotenv.env['SUPABASE_URL'] ?? '',
-      anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
-    );
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: const String.fromEnvironment('SUPABASE_URL'),
+    anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY'),
+  );
 
-    // 4. Then do your DI
-    await di.init();
+  // Initialize dependency injection
+  await di.init();
 
-    runApp(const MyApp());
-  } catch (e) {
-    // Innovative tip: Catch the error here so you know WHY it failed
-    print("FATAL ERROR during startup: $e");
-  }
+  runApp(const MyApp());
 }
 
 /// Root application widget.
@@ -43,6 +34,7 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => di.sl<AuthBloc>()),
+        BlocProvider(create: (_) => di.sl<PostsBloc>()),
       ],
       child: MaterialApp.router(
         title: AppStrings.appName,
