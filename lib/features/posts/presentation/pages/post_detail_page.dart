@@ -13,26 +13,46 @@ import '../bloc/posts_state.dart';
 
 /// Page displaying full post details.
 ///
-/// Features:
-/// - Full post content with image
-/// - Edit and delete actions (for post owner)
-/// - Comments section (to be added in Step 8)
-class PostDetailPage extends StatelessWidget {
-  /// The post to display.
+/// Listens for [PostUpdated] state to refresh the displayed post
+/// after editing.
+class PostDetailPage extends StatefulWidget {
+  /// The initial post to display.
   final Post post;
 
   const PostDetailPage({super.key, required this.post});
 
   @override
+  State<PostDetailPage> createState() => _PostDetailPageState();
+}
+
+class _PostDetailPageState extends State<PostDetailPage> {
+  /// Current post data (may be updated after edit).
+  late Post _post;
+
+  @override
+  void initState() {
+    super.initState();
+    _post = widget.post;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-    final isOwner = post.authorId == currentUserId;
+    final isOwner = _post.authorId == currentUserId;
 
     return BlocListener<PostsBloc, PostsState>(
       listener: (context, state) {
         if (state is PostDeleted) {
           Helpers.showSnackBar(context, 'Post deleted');
           context.pop();
+        } else if (state is PostUpdated) {
+          // Update displayed post when edited
+          if (state.post.id == _post.id) {
+            setState(() {
+              _post = state.post;
+            });
+            Helpers.showSnackBar(context, 'Post updated!');
+          }
         } else if (state is PostsError) {
           Helpers.showSnackBar(context, state.message, isError: true);
         }
@@ -46,8 +66,8 @@ class PostDetailPage extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.edit),
                 onPressed: () => context.push(
-                  '/edit-post/${post.id}',
-                  extra: post,
+                  '/edit-post/${_post.id}',
+                  extra: _post,
                 ),
               ),
               // Delete button
@@ -63,9 +83,9 @@ class PostDetailPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ─── Image ──────────────────────────────────────────────────
-              if (post.imageUrl != null)
+              if (_post.imageUrl != null)
                 CachedNetworkImage(
-                  imageUrl: post.imageUrl!,
+                  imageUrl: _post.imageUrl!,
                   height: 250,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -89,7 +109,7 @@ class PostDetailPage extends StatelessWidget {
                   children: [
                     // Title
                     Text(
-                      post.title,
+                      _post.title,
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -99,7 +119,7 @@ class PostDetailPage extends StatelessWidget {
 
                     // Date
                     Text(
-                      Helpers.formatDate(post.createdAt),
+                      Helpers.formatDate(_post.createdAt),
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[500],
@@ -109,7 +129,7 @@ class PostDetailPage extends StatelessWidget {
 
                     // Content
                     Text(
-                      post.content,
+                      _post.content,
                       style: const TextStyle(
                         fontSize: 16,
                         height: 1.6,
@@ -153,7 +173,7 @@ class PostDetailPage extends StatelessWidget {
     );
 
     if (confirm && context.mounted) {
-      context.read<PostsBloc>().add(DeletePostEvent(id: post.id));
+      context.read<PostsBloc>().add(DeletePostEvent(id: _post.id));
     }
   }
 }
