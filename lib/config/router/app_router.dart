@@ -131,7 +131,7 @@ class AppRouter {
         path: '/profile',
         name: 'profile',
         builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Profile - Coming in Step 9')),
+          body: Center(child: Text('Profile - Coming soon...')),
         ),
       ),
     ],

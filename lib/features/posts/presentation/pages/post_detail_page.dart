@@ -154,7 +154,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text('Comments will be added in Step 8'),
+                child: Text('Comments coming soon...'),
               ),
               const SizedBox(height: 32),
             ],
