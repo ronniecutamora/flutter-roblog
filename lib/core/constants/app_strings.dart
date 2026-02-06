@@ -21,8 +21,10 @@ class AppStrings {
   /// Register page title.
   static const String register = 'Register';
   
-  /// Logout button/action text.
+  /// Logout button/action/confirmation text.
   static const String logout = 'Logout';
+  static const String confirmLogout = 'Are you sure you want to logout?';
+
   
   /// Email field label.
   static const String email = 'Email';
