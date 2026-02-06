@@ -155,27 +155,32 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
 
   /// Uploads an image to Supabase Storage.
   ///
-  /// Handles both web and mobile platforms.
+  /// Handles both web and mobile platforms with proper MIME type specification.
   Future<String> _uploadImage(String path, String userId) async {
     try {
-      final fileExt = path.split('.').last;
+      final fileExt = path.split('.').last.toLowerCase();
       final fileName = '${const Uuid().v4()}.$fileExt';
       final storagePath = 'posts/$userId/$fileName';
+      final contentType = _getMimeType(fileExt);
 
       if (kIsWeb) {
         // Web: read bytes from XFile
         final xFile = XFile(path);
         final bytes = await xFile.readAsBytes();
 
-        await _client.storage
-            .from(ApiEndpoints.blogImagesBucket)
-            .uploadBinary(storagePath, bytes);
+        await _client.storage.from(ApiEndpoints.blogImagesBucket).uploadBinary(
+              storagePath,
+              bytes,
+              fileOptions: FileOptions(contentType: contentType),
+            );
       } else {
         // Mobile: upload file directly
         final file = File(path);
-        await _client.storage
-            .from(ApiEndpoints.blogImagesBucket)
-            .upload(storagePath, file);
+        await _client.storage.from(ApiEndpoints.blogImagesBucket).upload(
+              storagePath,
+              file,
+              fileOptions: FileOptions(contentType: contentType),
+            );
       }
 
       return _client.storage
@@ -183,6 +188,27 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
           .getPublicUrl(storagePath);
     } catch (e) {
       throw ServerException('Failed to upload image: $e');
+    }
+  }
+
+  /// Returns the MIME type for common image extensions.
+  String _getMimeType(String extension) {
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'bmp':
+        return 'image/bmp';
+      case 'svg':
+        return 'image/svg+xml';
+      default:
+        return 'image/jpeg'; // Default to JPEG for unknown extensions
     }
   }
 }
