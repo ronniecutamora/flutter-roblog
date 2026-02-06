@@ -12,12 +12,6 @@ import '../bloc/posts_state.dart';
 import '../widgets/post_card.dart';
 
 /// Home page displaying list of blog posts.
-///
-/// Features:
-/// - List of posts with pull-to-refresh
-/// - FAB to create new post
-/// - Drawer with profile and logout options
-/// - Navigation to post details
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -30,7 +24,16 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     // Load posts on page init
-    context.read<PostsBloc>().add(const LoadPostsEvent());
+    _loadPosts();
+  }
+
+  /// Loads posts if not already loaded.
+  void _loadPosts() {
+    final state = context.read<PostsBloc>().state;
+    // Only load if not already loaded
+    if (state is! PostsLoaded) {
+      context.read<PostsBloc>().add(const LoadPostsEvent());
+    }
   }
 
   /// Refreshes the posts list.
@@ -55,24 +58,37 @@ class _HomePageState extends State<HomePage> {
             Helpers.showSnackBar(context, state.message, isError: true);
           } else if (state is PostDeleted) {
             Helpers.showSnackBar(context, 'Post deleted');
+            // Reload posts after delete
+            context.read<PostsBloc>().add(const LoadPostsEvent());
+          } else if (state is PostCreated) {
+            // Reload posts after create
+            context.read<PostsBloc>().add(const LoadPostsEvent());
+          } else if (state is PostUpdated) {
+            // Reload posts after update
             context.read<PostsBloc>().add(const LoadPostsEvent());
           }
         },
         builder: (context, state) {
-          if (state is PostsLoading || state is PostsInitial) {
+          // Show loading for initial, loading, and transitional states
+          if (state is PostsLoading ||
+              state is PostsInitial ||
+              state is PostCreated ||
+              state is PostUpdated ||
+              state is PostDeleted) {
             return const Center(child: CircularProgressIndicator());
           }
 
           if (state is PostsLoaded) {
             if (state.posts.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+              return RefreshIndicator(
+                onRefresh: _onRefresh,
+                child: ListView(
                   children: [
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.3),
                     Icon(Icons.article_outlined,
                         size: 64, color: Colors.grey[400]),
                     const SizedBox(height: 16),
-                    const Text(AppStrings.noPosts),
+                    const Center(child: Text(AppStrings.noPosts)),
                   ],
                 ),
               );
@@ -94,7 +110,7 @@ class _HomePageState extends State<HomePage> {
             );
           }
 
-          // Error or other state - show empty with refresh
+          // Error state - show with refresh option
           return RefreshIndicator(
             onRefresh: _onRefresh,
             child: ListView(
