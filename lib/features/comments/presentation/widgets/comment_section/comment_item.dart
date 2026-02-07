@@ -10,7 +10,7 @@ import 'package:flutter_roblog/features/comments/domain/entities/comment.dart';
 /// - Comment content
 /// - Optional attached image
 /// - Timestamp
-/// - Delete button (for owner)
+/// - Long press to delete (for owner)
 class CommentItem extends StatelessWidget {
   /// The comment to display.
   final Comment comment;
@@ -30,51 +30,42 @@ class CommentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Author avatar
-          _buildAvatar(),
-          const SizedBox(width: 12),
-          // Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Author name and date row
-                Row(
-                  children: [
-                    if (comment.authorName != null)
+    return GestureDetector(
+      onLongPress: isOwner ? () => _showDeleteOption(context) : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Author avatar
+            _buildAvatar(),
+            const SizedBox(width: 12),
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Author name and date row
+                  Row(
+                    children: [
+                      if (comment.authorName != null)
+                        Text(
+                          comment.authorName!,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      const Spacer(),
                       Text(
-                        comment.authorName!,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                        Helpers.formatDate(comment.createdAt),
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 12,
                         ),
                       ),
-                    const Spacer(),
-                    Text(
-                      Helpers.formatDate(comment.createdAt),
-                      style: TextStyle(
-                        color: Colors.grey[500],
-                        fontSize: 12,
-                      ),
-                    ),
-                    if (isOwner)
-                      IconButton(
-                        icon: Icon(
-                          Icons.delete_outline,
-                          size: 18,
-                          color: Colors.grey[400],
-                        ),
-                        onPressed: onDelete,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                  ],
-                ),
+                    ],
+                  ),
                 const SizedBox(height: 4),
                 // Comment content
                 Text(
@@ -108,6 +99,31 @@ class CommentItem extends StatelessWidget {
             ),
           ),
         ],
+      ),
+      ),
+    );
+  }
+
+  void _showDeleteOption(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text(
+                'Delete Comment',
+                style: TextStyle(color: Colors.red),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                onDelete?.call();
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
