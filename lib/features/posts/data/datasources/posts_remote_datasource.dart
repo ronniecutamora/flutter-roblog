@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:image_picker/image_picker.dart';
@@ -38,16 +39,20 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
     return user.id;
   }
 
+  /// Select query with joined profiles data for author info.
+  static const String _selectWithProfiles =
+      '*, profiles!author_id(display_name, avatar_url)';
+
   @override
   Future<List<PostModel>> getPosts() async {
     try {
       final response = await _client
           .from(ApiEndpoints.blogsTable)
-          .select()
+          .select(_selectWithProfiles)
           .order('created_at', ascending: false);
 
       return (response as List)
-          .map((json) => PostModel.fromJson(json))
+          .map((json) => PostModel.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       throw ServerException('Failed to fetch posts: $e');
@@ -59,7 +64,7 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
     try {
       final response = await _client
           .from(ApiEndpoints.blogsTable)
-          .select()
+          .select(_selectWithProfiles)
           .eq('id', id)
           .single();
 
@@ -91,7 +96,7 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
             'author_id': userId,
             'image_url': imageUrl,
           })
-          .select()
+          .select(_selectWithProfiles)
           .single();
 
       return PostModel.fromJson(response);
@@ -136,7 +141,7 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
           .from(ApiEndpoints.blogsTable)
           .update(updateData)
           .eq('id', id)
-          .select()
+          .select(_selectWithProfiles)
           .single();
 
       return PostModel.fromJson(response);
