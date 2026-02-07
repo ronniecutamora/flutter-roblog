@@ -73,7 +73,7 @@ class AppStrings {
   static const String comments = 'Comments';
   
   /// Add comment placeholder.
-  static const String addComment = 'Add a comment...';
+  static const String createComment = 'Add a comment...';
   
   /// Empty comments message.
   static const String noComments = 'No comments yet. Be the first!';
