@@ -1,14 +1,7 @@
 import '../../domain/entities/post.dart';
 
 /// Data model for [Post] with JSON serialization.
-///
-/// Extends the domain entity and adds methods to:
-/// - Create from Supabase row (JSON map)
-/// - Convert to JSON for API requests
-///
-/// Maps to the `blogs` table in Supabase.
 class PostModel extends Post {
-  /// Creates a [PostModel] instance.
   const PostModel({
     required super.id,
     required super.title,
@@ -17,23 +10,23 @@ class PostModel extends Post {
     super.imageUrl,
     required super.createdAt,
     required super.updatedAt,
+    super.authorName,
+    super.authorAvatarUrl,
   });
 
-  /// Creates a [PostModel] from a Supabase row (JSON map).
+  /// Creates a [PostModel] from JSON.
   ///
-  /// Expected JSON structure:
+  /// Expects joined data from profiles table:
   /// ```json
   /// {
-  ///   "id": "uuid",
-  ///   "title": "Post Title",
-  ///   "content": "Post content...",
-  ///   "author_id": "user-uuid",
-  ///   "image_url": "https://...",
-  ///   "created_at": "2024-01-01T00:00:00Z",
-  ///   "updated_at": "2024-01-01T00:00:00Z"
+  ///   "id": "...",
+  ///   "profiles": { "display_name": "...", "avatar_url": "..." }
   /// }
   /// ```
   factory PostModel.fromJson(Map<String, dynamic> json) {
+    // Parse joined profiles data
+    final profiles = json['profiles'] as Map<String, dynamic>?;
+
     return PostModel(
       id: json['id'] as String,
       title: json['title'] as String,
@@ -42,14 +35,12 @@ class PostModel extends Post {
       imageUrl: json['image_url'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      authorName: profiles?['display_name'] as String?,
+      authorAvatarUrl: profiles?['avatar_url'] as String?,
     );
   }
 
-  /// Converts this [PostModel] to a JSON map for API requests.
-  ///
-  /// Note: `id`, `created_at`, `updated_at` are excluded as they
-  /// are managed by Supabase.
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toInsertJson() {
     return {
       'title': title,
       'content': content,
@@ -58,24 +49,12 @@ class PostModel extends Post {
     };
   }
 
-  /// Creates a copy of this [PostModel] with updated fields.
-  PostModel copyWith({
-    String? id,
-    String? title,
-    String? content,
-    String? authorId,
-    String? imageUrl,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    return PostModel(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      content: content ?? this.content,
-      authorId: authorId ?? this.authorId,
-      imageUrl: imageUrl ?? this.imageUrl,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-    );
+  Map<String, dynamic> toUpdateJson() {
+    return {
+      'title': title,
+      'content': content,
+      'image_url': imageUrl,
+      'updated_at': DateTime.now().toIso8601String(),
+    };
   }
 }
