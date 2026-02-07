@@ -27,12 +27,16 @@ class CommentsRemoteDataSourceImpl implements CommentsRemoteDataSource {
     return user.id;
   }
 
+  /// Select query with joined profiles data for author info.
+  static const String _selectWithProfiles =
+      '*, profiles!author_id(display_name, avatar_url)';
+
   @override
   Future<List<CommentModel>> getComments(String blogId) async {
     try {
       final response = await _client
           .from(ApiEndpoints.commentsTable)
-          .select()
+          .select(_selectWithProfiles)
           .eq('blog_id', blogId)
           .order('created_at', ascending: true);
 
@@ -60,7 +64,7 @@ class CommentsRemoteDataSourceImpl implements CommentsRemoteDataSource {
         'author_id': userId,
         'content': content,
         'image_url': imageUrl,
-      }).select().single();
+      }).select(_selectWithProfiles).single();
 
       return CommentModel.fromJson(response);
     } on AppAuthException {
