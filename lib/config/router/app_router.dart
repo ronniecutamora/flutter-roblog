@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_roblog/features/profile/presentation/pages/profile_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -131,7 +132,7 @@ class AppRouter {
         path: '/profile',
         name: 'profile',
         builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Profile - Coming soon...')),
+          body: Center(child: ProfilePage()),
         ),
       ),
     ],
