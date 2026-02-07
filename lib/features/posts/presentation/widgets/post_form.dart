@@ -125,52 +125,7 @@ class _PostFormState extends State<PostForm> {
     }
   }
 
-  /// Builds the image preview widget.
-  Widget _buildImagePreview() {
-    if (kIsWeb && _imageBytes != null) {
-      // Web: use Image.memory
-      return Image.memory(
-        _imageBytes!,
-        height: 200,
-        width: double.infinity,
-        fit: BoxFit.cover,
-      );
-    } else if (!kIsWeb && _imagePath != null) {
-      // Mobile: use Image.file
-      return Image.network(
-        // For mobile, we need to handle differently
-        // Actually, let's use a file image provider approach
-        _imagePath!,
-        height: 200,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          // Fallback to file loading via Image widget with FileImage
-          return _buildMobileFileImage();
-        },
-      );
-    } else if (widget.initialImageUrl != null && !_imageChanged) {
-      // Existing image from URL
-      return Image.network(
-        widget.initialImageUrl!,
-        height: 200,
-        width: double.infinity,
-        fit: BoxFit.cover,
-      );
-    }
-    return const SizedBox.shrink();
-  }
-
-  /// Builds mobile file image (separate method to avoid web import issues).
-  Widget _buildMobileFileImage() {
-    // This will be handled by the _buildNewImagePreview method
-    return Container(
-      height: 200,
-      color: Colors.grey[200],
-      child: const Center(child: Icon(Icons.image)),
-    );
-  }
-
+  
   @override
   Widget build(BuildContext context) {
     // Determine which image to show
