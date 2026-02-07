@@ -1,3 +1,9 @@
+import 'package:flutter_roblog/features/profile/data/datasources/profile_remote_datasource.dart';
+import 'package:flutter_roblog/features/profile/data/repositories/profile_repository_impl.dart';
+import 'package:flutter_roblog/features/profile/domain/repositories/profile_repository.dart';
+import 'package:flutter_roblog/features/profile/domain/usecases/get_profile.dart';
+import 'package:flutter_roblog/features/profile/domain/usecases/update_profile.dart';
+import 'package:flutter_roblog/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -116,6 +122,31 @@ Future<void> init() async {
   // Data Source
   sl.registerLazySingleton<CommentsRemoteDataSource>(
     () => CommentsRemoteDataSourceImpl(client: sl()),
+  );
+
+  // ─── Profile Feature ──────────────────────────────────────────────────────────
+
+  // BLoC
+  sl.registerFactory(
+    () => ProfileBloc(
+      getProfile: sl(), 
+      updateProfile: sl(),
+ 
+    ),
+  );
+
+  // Use Cases
+  sl.registerLazySingleton(() => GetProfile(sl()));
+  sl.registerLazySingleton(() => UpdateProfile(sl()));
+
+  // Repository
+  sl.registerLazySingleton<ProfileRepository>(
+    () => ProfileRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // Data Source
+  sl.registerLazySingleton<ProfileRemoteDataSource>(
+    () => ProfileRemoteDataSourceImpl(client: sl()),
   );
 
   // ─── External ───────────────────────────────────────────────────────────────
