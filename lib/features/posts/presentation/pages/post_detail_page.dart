@@ -118,15 +118,46 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Date
-                    Text(
-                      Helpers.formatDate(_post.createdAt),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[500],
+                   // Author info row
+                  Row(
+                    children: [
+                      // Author avatar
+                      if (_post.authorAvatarUrl != null)
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundImage: CachedNetworkImageProvider(
+                            _post.authorAvatarUrl!,
+                          ),
+                        )
+                      else
+                        const CircleAvatar(
+                          radius: 16,
+                          child: Icon(Icons.person, size: 18),
+                        ),
+                      const SizedBox(width: 10),
+                      // Author name and date
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_post.authorName != null)
+                            Text(
+                              _post.authorName!,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          Text(
+                            Helpers.formatDate(_post.createdAt),
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
+                    ],
+                  ),
 
                     // Content
                     Text(
@@ -141,18 +172,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
               ),
 
               const Divider(),
-
-              // ─── Comments Section (placeholder for Step 8) ──────────────
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  AppStrings.comments,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: CommentsSection(blogId: _post.id),
