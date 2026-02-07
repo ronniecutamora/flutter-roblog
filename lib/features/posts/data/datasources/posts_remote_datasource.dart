@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -116,6 +116,11 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
       String? imageUrl;
 
       if (imagePath != null) {
+        // Fetch existing post to delete old image before uploading new one
+        final existingPost = await getPostById(id);
+        if (existingPost.imageUrl != null) {
+          await _deleteImage(existingPost.imageUrl!);
+        }
         imageUrl = await _uploadImage(imagePath, userId);
       }
 
@@ -140,6 +145,7 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
     } on AppAuthException {
       rethrow;
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException('Failed to update post: $e');
     }
   }
@@ -147,8 +153,17 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
   @override
   Future<void> deletePost(String id) async {
     try {
+      // Fetch post to get image URL before deleting
+      final post = await getPostById(id);
+
+      // Delete image from storage if exists
+      if (post.imageUrl != null) {
+        await _deleteImage(post.imageUrl!);
+      }
+
       await _client.from(ApiEndpoints.blogsTable).delete().eq('id', id);
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException('Failed to delete post: $e');
     }
   }
@@ -188,6 +203,36 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
           .getPublicUrl(storagePath);
     } catch (e) {
       throw ServerException('Failed to upload image: $e');
+    }
+  }
+
+  /// Deletes an image from Supabase Storage.
+  ///
+  /// Extracts the storage path from the public URL and removes the file.
+  /// Fails silently if the image cannot be deleted to avoid blocking operations.
+  Future<void> _deleteImage(String imageUrl) async {
+    try {
+      // Extract storage path from public URL
+      // URL format: .../storage/v1/object/public/blog-images/posts/userId/filename.jpg
+      // Parse URL: https://xxx.supabase.co/storage/v1/object/public/blog-images/posts/userId/file.jpg
+      final uri = Uri.parse(imageUrl);
+      // pathSegments = ['storage', 'v1', 'object', 'public', 'blog-images', 'posts', 'userId', 'file.jpg']
+      final pathSegments = uri.pathSegments;
+
+      // Find the bucket name in the path and get everything after it
+      final bucketIndex = pathSegments.indexOf(ApiEndpoints.blogImagesBucket);
+      // bucketIndex = 4
+      if (bucketIndex != -1 && bucketIndex < pathSegments.length - 1) {
+        // Get everything AFTER the bucket name
+        final storagePath = pathSegments.sublist(bucketIndex + 1).join('/');
+        // storagePath = 'posts/userId/file.jpg'
+        await _client.storage
+            .from(ApiEndpoints.blogImagesBucket)
+            .remove([storagePath]); // remove() takes a List of paths
+      }
+    } catch (e) {
+      // Log but don't fail - image deletion is not critical
+      debugPrint('Failed to delete image from storage: $e');
     }
   }
 
