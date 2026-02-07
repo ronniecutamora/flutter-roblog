@@ -24,19 +24,27 @@ class Helpers {
   /// Text(Helpers.formatDate(post.createdAt)) // "Today at 14:30"
   /// ```
   static String formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
+  // 1. Force the date to the user's local time (Crucial for PH +8 offset)
+  final localDate = date.toLocal(); 
+  final now = DateTime.now();
 
-    if (difference.inDays == 0) {
-      return 'Today at ${DateFormat('HH:mm').format(date)}';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday at ${DateFormat('HH:mm').format(date)}';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
-    } else {
-      return DateFormat('MMM d, yyyy').format(date);
-    }
+  // 2. Create "midnight" versions to compare actual calendar days
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = DateTime(now.year, now.month, now.day - 1);
+  final aDate = DateTime(localDate.year, localDate.month, localDate.day);
+
+  if (aDate == today) {
+    return 'Today at ${DateFormat('HH:mm').format(localDate)}';
+  } else if (aDate == yesterday) {
+    return 'Yesterday at ${DateFormat('HH:mm').format(localDate)}';
+  } else if (now.difference(localDate).inDays < 7) {
+    // Use inDays here only after we know it's not today or yesterday
+    final days = now.difference(localDate).inDays;
+    return '$days ${days == 1 ? 'day' : 'days'} ago';
+  } else {
+    return DateFormat('MMM d, yyyy').format(localDate);
   }
+}
 
   /// Shows a snackbar with the given [message].
   ///
