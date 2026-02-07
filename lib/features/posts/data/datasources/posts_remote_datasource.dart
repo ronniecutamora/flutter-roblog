@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/errors/exceptions.dart';
@@ -171,11 +170,13 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
   /// Uploads an image to Supabase Storage.
   ///
   /// Handles both web and mobile platforms with proper MIME type specification.
+  /// Path format: {userId}/{userId}_{timestamp}.{ext}
   Future<String> _uploadImage(String path, String userId) async {
     try {
       final fileExt = path.split('.').last.toLowerCase();
-      final fileName = '${const Uuid().v4()}.$fileExt';
-      final storagePath = 'posts/$userId/$fileName';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = '${userId}_$timestamp.$fileExt';
+      final storagePath = '$userId/$fileName';
       final contentType = _getMimeType(fileExt);
 
       if (kIsWeb) {
@@ -214,21 +215,16 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
     try {
       // Extract storage path from public URL
       // URL format: .../storage/v1/object/public/blog-images/posts/userId/filename.jpg
-      // Parse URL: https://xxx.supabase.co/storage/v1/object/public/blog-images/posts/userId/file.jpg
       final uri = Uri.parse(imageUrl);
-      // pathSegments = ['storage', 'v1', 'object', 'public', 'blog-images', 'posts', 'userId', 'file.jpg']
       final pathSegments = uri.pathSegments;
 
       // Find the bucket name in the path and get everything after it
       final bucketIndex = pathSegments.indexOf(ApiEndpoints.blogImagesBucket);
-      // bucketIndex = 4
       if (bucketIndex != -1 && bucketIndex < pathSegments.length - 1) {
-        // Get everything AFTER the bucket name
         final storagePath = pathSegments.sublist(bucketIndex + 1).join('/');
-        // storagePath = 'posts/userId/file.jpg'
         await _client.storage
             .from(ApiEndpoints.blogImagesBucket)
-            .remove([storagePath]); // remove() takes a List of paths
+            .remove([storagePath]);
       }
     } catch (e) {
       // Log but don't fail - image deletion is not critical
