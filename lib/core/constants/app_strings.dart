@@ -69,8 +69,13 @@ class AppStrings {
 
   // ─── Comments ───────────────────────────────────────────────────────────────
   
-  /// Comments section title.
+  /// Comments section title and other comment labels.
   static const String comments = 'Comments';
+  /// Comment deleted.
+  static const String commentAdded = 'Comment added.';
+  /// Comment added.
+  static const String commentDeleted = 'Commet deleted.';
+
   
   /// Add comment placeholder.
   static const String createComment = 'Add a comment...';
