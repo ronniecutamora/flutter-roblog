@@ -20,6 +20,16 @@ import '../../features/posts/domain/usecases/get_posts.dart';
 import '../../features/posts/domain/usecases/update_post.dart';
 import '../../features/posts/presentation/bloc/posts_bloc.dart';
 
+// ─── Comments ────────────────────────────────────────────────────────────────────
+import '../../features/comments/data/repositories/comments_repository_impl.dart';
+import '../../features/comments/data/datasources/comments_remote_datasource.dart';
+import '../../features/comments/domain/repositories/comments_repository.dart';
+import '../../features/comments/domain/usecases/create_comment.dart';
+import '../../features/comments/domain/usecases/delete_comment.dart';
+import '../../features/comments/domain/usecases/get_comments.dart';
+import '../../features/comments/presentation/bloc/comments_bloc.dart';
+
+
 /// Global service locator instance.
 final sl = GetIt.instance;
 
@@ -80,6 +90,32 @@ Future<void> init() async {
   // Data Source
   sl.registerLazySingleton<PostsRemoteDataSource>(
     () => PostsRemoteDataSourceImpl(client: sl()),
+  );
+
+  // ─── Comments Feature ──────────────────────────────────────────────────────────
+
+  // BLoC
+  sl.registerFactory(
+    () => CommentsBloc(
+      getComments: sl(),
+      createComment: sl(),
+      deleteComment: sl(),
+    ),
+  );
+
+  // Use Cases
+  sl.registerLazySingleton(() => GetComments(sl()));
+  sl.registerLazySingleton(() => CreateComment(sl()));
+  sl.registerLazySingleton(() => DeleteComment(sl()));
+
+  // Repository
+  sl.registerLazySingleton<CommentsRepository>(
+    () => CommentsRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // Data Source
+  sl.registerLazySingleton<CommentsRemoteDataSource>(
+    () => CommentsRemoteDataSourceImpl(client: sl()),
   );
 
   // ─── External ───────────────────────────────────────────────────────────────
