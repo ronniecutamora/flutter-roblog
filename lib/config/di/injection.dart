@@ -7,6 +7,10 @@ import 'package:flutter_roblog/features/profile/presentation/bloc/profile_bloc.d
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// ─── Core ─────────────────────────────────────────────────────────────────────
+import '../../core/data/storage_repository_impl.dart';
+import '../../core/repositories/storage_repository.dart';
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -95,7 +99,7 @@ Future<void> init() async {
 
   // Data Source
   sl.registerLazySingleton<PostsRemoteDataSource>(
-    () => PostsRemoteDataSourceImpl(client: sl()),
+    () => PostsRemoteDataSourceImpl(client: sl(), storage: sl()),
   );
 
   // ─── Comments Feature ──────────────────────────────────────────────────────────
@@ -121,7 +125,7 @@ Future<void> init() async {
 
   // Data Source
   sl.registerLazySingleton<CommentsRemoteDataSource>(
-    () => CommentsRemoteDataSourceImpl(client: sl()),
+    () => CommentsRemoteDataSourceImpl(client: sl(), storage: sl()),
   );
 
   // ─── Profile Feature ──────────────────────────────────────────────────────────
@@ -146,10 +150,16 @@ Future<void> init() async {
 
   // Data Source
   sl.registerLazySingleton<ProfileRemoteDataSource>(
-    () => ProfileRemoteDataSourceImpl(client: sl()),
+    () => ProfileRemoteDataSourceImpl(client: sl(), storage: sl()),
   );
 
   // ─── External ───────────────────────────────────────────────────────────────
 
   sl.registerLazySingleton(() => Supabase.instance.client);
+
+  // ─── Core Services ─────────────────────────────────────────────────────────
+
+  sl.registerLazySingleton<StorageRepository>(
+    () => StorageRepositoryImpl(client: sl()),
+  );
 }
