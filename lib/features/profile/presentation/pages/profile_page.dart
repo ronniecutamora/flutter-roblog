@@ -105,77 +105,94 @@ class _ProfilePageBodyState extends State<_ProfilePageBody> {
             return const Center(child: Text('Failed to load profile'));
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                GestureDetector(
-                  onTap: _isEditing ? _pickAvatar : null,
-                  child: CircleAvatar(
-                    radius: 60,
-                    backgroundImage: _avatarPath != null
-                        ? FileImage(File(_avatarPath!))
-                        : user.avatarUrl != null
-                            ? CachedNetworkImageProvider(user.avatarUrl!)
-                            : null,
-                    child: _avatarPath == null && user.avatarUrl == null
-                        ? const Icon(Icons.person, size: 60)
-                        : null,
-                  ),
-                ),
-                if (_isEditing) ...[
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: _pickAvatar,
-                    child: const Text('Change Photo'),
-                  ),
-                ],
-                const SizedBox(height: 24),
-                Text(
-                  user.email,
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 24),
-                if (_isEditing) ...[
-                  TextFormField(
-                    controller: _displayNameController,
-                    decoration: const InputDecoration(
-                      labelText: AppStrings.displayName,
-                      prefixIcon: Icon(Icons.person_outline),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(24),
+                child: ConstrainedBox(
+                  // 2. Make the content at least as tall as the screen
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 48), // 48 is for padding
+                  child: Center( // 3. Center horizontally
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center, // 4. Center vertically
+                      crossAxisAlignment: CrossAxisAlignment.center, // 5. Ensure horizontal alignment
+                      children: [
+                                  Column(
+                        children: [
+                          GestureDetector(
+                            onTap: _isEditing ? _pickAvatar : null,
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundImage: _avatarPath != null
+                                  ? FileImage(File(_avatarPath!))
+                                  : user.avatarUrl != null
+                                      ? CachedNetworkImageProvider(user.avatarUrl!)
+                                      : null,
+                              child: _avatarPath == null && user.avatarUrl == null
+                                  ? const Icon(Icons.person, size: 60)
+                                  : null,
+                            ),
+                          ),
+                          if (_isEditing) ...[
+                            const SizedBox(height: 8),
+                            TextButton(
+                              onPressed: _pickAvatar,
+                              child: const Text('Change Photo'),
+                            ),
+                          ],
+                          const SizedBox(height: 24),
+                          Text(
+                            user.email,
+                            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                          ),
+                          const SizedBox(height: 24),
+                          if (_isEditing) ...[
+                            TextFormField(
+                              controller: _displayNameController,
+                              decoration: const InputDecoration(
+                                labelText: AppStrings.displayName,
+                                prefixIcon: Icon(Icons.person_outline),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () => setState(() {
+                                      _isEditing = false;
+                                      _avatarPath = null;
+                                    }),
+                                    child: const Text(AppStrings.cancel),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: _saveProfile,
+                                    child: const Text(AppStrings.save),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ] else ...[
+                            Text(
+                              user.displayName ?? 'No display name set',
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => setState(() {
-                            _isEditing = false;
-                            _avatarPath = null;
-                          }),
-                          child: const Text(AppStrings.cancel),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _saveProfile,
-                          child: const Text(AppStrings.save),
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  Text(
-                    user.displayName ?? 'No display name set',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+                ),
+              );
+            },
           );
         },
       ),
