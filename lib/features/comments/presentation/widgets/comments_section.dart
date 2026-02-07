@@ -43,57 +43,57 @@ class _CommentsSectionContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(
-            AppStrings.comments,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
+    return BlocConsumer<CommentsBloc, CommentsState>(
+      listener: (context, state) {
+        if (state is CommentAdded) {
+          Helpers.showSnackBar(context, AppStrings.commentAdded);
+        } else if (state is CommentDeleted) {
+          Helpers.showSnackBar(context, AppStrings.commentDeleted);
+        } else if (state is CommentsError) {
+          Helpers.showSnackBar(context, state.message, isError: true);
+        }
+      },
+      builder: (context, state) {
+        final commentsCount = state is CommentsLoaded ? state.comments.length : 0;
 
-        // Input
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: CommentInput(
-            onSubmit: (content, imagePath) {
-              context.read<CommentsBloc>().add(
-                    CreateCommentEvent(
-                      blogId: blogId,
-                      content: content,
-                      imagePath: imagePath,
-                    ),
-                  );
-            },
-          ),
-        ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with count
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                '${AppStrings.comments} ($commentsCount)',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
 
-        const SizedBox(height: 16),
+            // Input
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: CommentInput(
+                onSubmit: (content, imagePath) {
+                  context.read<CommentsBloc>().add(
+                        CreateCommentEvent(
+                          blogId: blogId,
+                          content: content,
+                          imagePath: imagePath,
+                        ),
+                      );
+                },
+              ),
+            ),
 
-        // Comments list with states
-        BlocConsumer<CommentsBloc, CommentsState>(
-          listener: (context, state) {
-            if (state is CommentAdded) {
-              Helpers.showSnackBar(context, 'Comment added!');
-            } else if (state is CommentDeleted) {
-              Helpers.showSnackBar(context, 'Comment deleted');
-            } else if (state is CommentsError) {
-              Helpers.showSnackBar(context, state.message, isError: true);
-            }
-          },
-          builder: (context, state) {
-            if (state is CommentsLoading) {
-              return const Padding(
+            const SizedBox(height: 16),
+
+            // Comments list with states
+            if (state is CommentsLoading)
+              const Padding(
                 padding: EdgeInsets.all(32),
                 child: Center(child: CircularProgressIndicator()),
-              );
-            }
-
-            if (state is CommentsLoaded) {
-              return CommentsList(
+              )
+            else if (state is CommentsLoaded)
+              CommentsList(
                 comments: state.comments,
                 currentUserId: currentUserId,
                 onDelete: (comment) {
@@ -104,13 +104,10 @@ class _CommentsSectionContent extends StatelessWidget {
                         ),
                       );
                 },
-              );
-            }
-
-            return const SizedBox.shrink();
-          },
-        ),
-      ],
+              ),
+          ],
+        );
+      },
     );
   }
 }
