@@ -11,7 +11,7 @@ import '../models/comment_model.dart';
 /// Contract for comments data operations.
 abstract class CommentsRemoteDataSource {
   Future<List<CommentModel>> getComments(String blogId);
-  Future<CommentModel> addComment(String blogId, String content, String? imagePath);
+  Future<CommentModel> createComment(String blogId, String content, String? imagePath);
   Future<void> deleteComment(String id);
 }
 
@@ -31,7 +31,7 @@ class CommentsRemoteDataSourceImpl implements CommentsRemoteDataSource {
   Future<List<CommentModel>> getComments(String blogId) async {
     try {
       final response = await _client
-          .from(ApiEndpoints.comments)
+          .from(ApiEndpoints.commentsTable)
           .select()
           .eq('blog_id', blogId)
           .order('created_at', ascending: true);
@@ -45,7 +45,7 @@ class CommentsRemoteDataSourceImpl implements CommentsRemoteDataSource {
   }
 
   @override
-  Future<CommentModel> addComment(
+  Future<CommentModel> createComment(
       String blogId, String content, String? imagePath) async {
     try {
       final userId = _currentUserId;
@@ -55,7 +55,7 @@ class CommentsRemoteDataSourceImpl implements CommentsRemoteDataSource {
         imageUrl = await _uploadImage(imagePath, userId);
       }
 
-      final response = await _client.from(ApiEndpoints.comments).insert({
+      final response = await _client.from(ApiEndpoints.commentsTable).insert({
         'blog_id': blogId,
         'author_id': userId,
         'content': content,
@@ -76,7 +76,7 @@ class CommentsRemoteDataSourceImpl implements CommentsRemoteDataSource {
     try {
       // Fetch comment to get image URL before deleting
       final response = await _client
-          .from(ApiEndpoints.comments)
+          .from(ApiEndpoints.commentsTable)
           .select()
           .eq('id', id)
           .single();
@@ -88,7 +88,7 @@ class CommentsRemoteDataSourceImpl implements CommentsRemoteDataSource {
         await _deleteImage(comment.imageUrl!);
       }
 
-      await _client.from(ApiEndpoints.comments).delete().eq('id', id);
+      await _client.from(ApiEndpoints.commentsTable).delete().eq('id', id);
     } catch (e) {
       if (e is ServerException) rethrow;
       throw ServerException('Failed to delete comment: $e');

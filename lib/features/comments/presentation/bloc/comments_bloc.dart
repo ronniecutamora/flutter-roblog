@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../domain/usecases/add_comment.dart';
+import '../../domain/usecases/create_comment.dart' as create_comment;
 import '../../domain/usecases/delete_comment.dart';
 import '../../domain/usecases/get_comments.dart';
 import 'comments_event.dart';
@@ -9,16 +9,16 @@ import 'comments_state.dart';
 /// BLoC for managing comments state.
 class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   final GetComments getComments;
-  final AddComment addComment;
+  final create_comment.CreateComment createComment;
   final DeleteComment deleteComment;
 
   CommentsBloc({
     required this.getComments,
-    required this.addComment,
+    required this.createComment,
     required this.deleteComment,
   }) : super(CommentsInitial()) {
     on<LoadCommentsEvent>(_onLoadComments);
-    on<AddCommentEvent>(_onAddComment);
+    on<CreateCommentEvent>(_onCreateComment);
     on<DeleteCommentEvent>(_onDeleteComment);
   }
 
@@ -33,10 +33,10 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     }
   }
 
-  Future<void> _onAddComment(
-      AddCommentEvent event, Emitter<CommentsState> emit) async {
+  Future<void> _onCreateComment(
+      CreateCommentEvent event, Emitter<CommentsState> emit) async {
     emit(CommentsLoading());
-    final (_, failure) = await addComment(
+    final (_, failure) = await createComment(
       blogId: event.blogId,
       content: event.content,
       imagePath: event.imagePath,

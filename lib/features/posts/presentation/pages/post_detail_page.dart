@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_roblog/features/comments/presentation/widgets/comments_section.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -152,9 +153,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   ),
                 ),
               ),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text('Comments coming soon...'),
+                child: CommentsSection(blogId: _post.id),
               ),
               const SizedBox(height: 32),
             ],

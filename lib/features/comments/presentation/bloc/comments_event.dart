@@ -13,12 +13,12 @@ class LoadCommentsEvent extends CommentsEvent {
   List<Object?> get props => [blogId];
 }
 
-class AddCommentEvent extends CommentsEvent {
+class CreateCommentEvent extends CommentsEvent {
   final String blogId;
   final String content;
   final String? imagePath;
 
-  AddCommentEvent({
+  CreateCommentEvent({
     required this.blogId,
     required this.content,
     this.imagePath,

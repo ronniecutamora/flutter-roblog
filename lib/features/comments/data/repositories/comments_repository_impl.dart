@@ -22,11 +22,11 @@ class CommentsRepositoryImpl implements CommentsRepository {
   }
 
   @override
-  Future<(Comment?, Failure?)> addComment(
+  Future<(Comment?, Failure?)> createComment(
       String blogId, String content, String? imagePath) async {
     try {
       final comment =
-          await remoteDataSource.addComment(blogId, content, imagePath);
+          await remoteDataSource.createComment(blogId, content, imagePath);
       return (comment as Comment, null);
     } on ServerException catch (e) {
       return (null, ServerFailure(e.message));
