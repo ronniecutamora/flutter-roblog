@@ -15,6 +15,9 @@ class ApiEndpoints {
   /// Comments table name in Supabase.
   static const String commentsTable = 'comments';
 
+  /// Profiles table name in Supabase.
+  static const String profilesTable = 'profiles';
+
   // ─── Storage ────────────────────────────────────────────────────────────────
   
   /// Storage bucket for blog and profile images.
