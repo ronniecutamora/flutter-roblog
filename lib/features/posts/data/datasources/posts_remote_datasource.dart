@@ -34,11 +34,14 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
   })  : _client = client,
         _storage = storage;
 
-  String get _currentUserId {
+  User get _currentUser {
     final user = _client.auth.currentUser;
     if (user == null) throw AppAuthException('Not authenticated');
-    return user.id;
+    return user;
   }
+
+  String get _currentUserId => _currentUser.id;
+  String get _currentUserEmail => _currentUser.email ?? _currentUser.id;
 
   /// Select query with joined profiles data for author info.
   static const String _selectWithProfiles =
@@ -82,11 +85,13 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
     String? imagePath,
   }) async {
     try {
-      final userId = _currentUserId;
       String? imageUrl;
 
       if (imagePath != null) {
-        imageUrl = await _storage.uploadImage(filePath: imagePath, userId: userId);
+        imageUrl = await _storage.uploadImage(
+          filePath: imagePath,
+          userEmail: _currentUserEmail,
+        );
       }
 
       final response = await _client
@@ -94,7 +99,7 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
           .insert({
             'title': title,
             'content': content,
-            'author_id': userId,
+            'author_id': _currentUserId,
             'image_url': imageUrl,
           })
           .select(_selectWithProfiles)
@@ -116,15 +121,14 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
     String? imagePath,
   }) async {
     try {
-      final userId = _currentUserId;
       String? imageUrl;
 
       if (imagePath != null) {
-        // Fetch existing post to delete old image before uploading new one
+        // Fetch existing post to get old image URL for upsert
         final existingPost = await getPostById(id);
         imageUrl = await _storage.replaceImage(
           filePath: imagePath,
-          userId: userId,
+          userEmail: _currentUserEmail,
           oldImageUrl: existingPost.imageUrl,
         );
       }

@@ -47,13 +47,13 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
       String? avatarUrl;
 
       if (avatarPath != null) {
-        // Get old avatar URL for cleanup
+        // Get old avatar URL for upsert
         final oldAvatarUrl = currentUser.userMetadata?['avatar_url'] as String?;
 
-        // Replace old avatar with new one (deletes old if exists)
+        // Replace old avatar with new one (upserts to same path)
         avatarUrl = await _storage.replaceImage(
           filePath: avatarPath,
-          userId: currentUser.id,
+          userEmail: currentUser.email ?? currentUser.id,
           oldImageUrl: oldAvatarUrl,
         );
       }
