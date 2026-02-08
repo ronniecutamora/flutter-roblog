@@ -25,6 +25,16 @@ echo ">>> Using flutter: $(command -v "$FLUTTER_BIN" || command -v flutter || tr
 "$FLUTTER_BIN" config --enable-web
 "$FLUTTER_BIN" precache --web
 
+# NEW: Create the .env file that pubspec.yaml is looking for
+echo ">>> Creating .env file from Vercel Environment Variables"
+cat <<EOF > .env
+SUPABASE_URL=$SUPABASE_URL
+SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+EOF
+
+# Verify it exists so the build doesn't fail
+ls -la .env
+
 # get packages
 "$FLUTTER_BIN" pub get
 
