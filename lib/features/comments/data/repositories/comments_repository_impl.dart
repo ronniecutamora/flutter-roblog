@@ -22,11 +22,17 @@ class CommentsRepositoryImpl implements CommentsRepository {
   }
 
   @override
-  Future<(Comment?, Failure?)> createComment(
-      String blogId, String content, String? imagePath) async {
+  Future<(Comment?, Failure?)> createComment({
+    required String blogId,
+    required String content,
+    List<String> imagePaths = const [],
+  }) async {
     try {
-      final comment =
-          await remoteDataSource.createComment(blogId, content, imagePath);
+      final comment = await remoteDataSource.createComment(
+        blogId: blogId,
+        content: content,
+        imagePaths: imagePaths,
+      );
       return (comment as Comment, null);
     } on ServerException catch (e) {
       return (null, ServerFailure(e.message));

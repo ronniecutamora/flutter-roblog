@@ -11,8 +11,12 @@ class CreateComment {
   Future<(Comment?, Failure?)> call({
     required String blogId,
     required String content,
-    String? imagePath,
+    List<String> imagePaths = const [],
   }) {
-    return repository.createComment(blogId, content, imagePath);
+    return repository.createComment(
+      blogId: blogId,
+      content: content,
+      imagePaths: imagePaths,
+    );
   }
 }

@@ -72,12 +72,12 @@ class _CommentsSectionContent extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: CommentInput(
-                onSubmit: (content, imagePath) {
+                onSubmit: (content, imagePaths) {
                   context.read<CommentsBloc>().add(
                         CreateCommentEvent(
                           blogId: blogId,
                           content: content,
-                          imagePath: imagePath,
+                          imagePaths: imagePaths,
                         ),
                       );
                 },

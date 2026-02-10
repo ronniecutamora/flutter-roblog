@@ -2,13 +2,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_roblog/core/utils/helpers.dart';
 import 'package:flutter_roblog/features/comments/domain/entities/comment.dart';
+import 'package:flutter_roblog/features/comments/presentation/widgets/comment_image_preview.dart';
 
 /// Widget displaying a single comment.
 ///
 /// Shows:
 /// - Author avatar and name
 /// - Comment content
-/// - Optional attached image
+/// - Optional attached images (up to 5, with +N overflow)
 /// - Timestamp
 /// - Long press to delete (for owner)
 class CommentItem extends StatelessWidget {
@@ -66,40 +67,32 @@ class CommentItem extends StatelessWidget {
                       ),
                     ],
                   ),
-                const SizedBox(height: 4),
-                // Comment content
-                Text(
-                  comment.content,
-                  style: const TextStyle(fontSize: 14),
-                ),
-                // Attached image
-                if (comment.imageUrl != null) ...[
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: comment.imageUrl!,
-                      height: 150,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      placeholder: (_, _) => Container(
-                        height: 150,
-                        color: Colors.grey[200],
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                      errorWidget: (_, _, _) => Container(
-                        height: 150,
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.broken_image),
-                      ),
-                    ),
+                  const SizedBox(height: 4),
+                  // Comment content
+                  Text(
+                    comment.content,
+                    style: const TextStyle(fontSize: 14),
                   ),
+                  // Attached images
+                  if (comment.hasImages) ...[
+                    const SizedBox(height: 8),
+                    CommentImagesPreview(
+                      imageUrls: comment.imageUrls,
+                      imageHeight: 80,
+                      onImageTap: (index) {
+                        ImageGalleryViewer.show(
+                          context,
+                          imageUrls: comment.imageUrls,
+                          initialIndex: index,
+                        );
+                      },
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }

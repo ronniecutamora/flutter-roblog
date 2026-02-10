@@ -8,7 +8,11 @@ import '../models/comment_model.dart';
 /// Contract for comments data operations.
 abstract class CommentsRemoteDataSource {
   Future<List<CommentModel>> getComments(String blogId);
-  Future<CommentModel> createComment(String blogId, String content, String? imagePath);
+  Future<CommentModel> createComment({
+    required String blogId,
+    required String content,
+    List<String> imagePaths = const [],
+  });
   Future<void> deleteComment(String id);
 }
 
@@ -54,23 +58,28 @@ class CommentsRemoteDataSourceImpl implements CommentsRemoteDataSource {
   }
 
   @override
-  Future<CommentModel> createComment(
-      String blogId, String content, String? imagePath) async {
+  Future<CommentModel> createComment({
+    required String blogId,
+    required String content,
+    List<String> imagePaths = const [],
+  }) async {
     try {
-      String? imageUrl;
-
-      if (imagePath != null) {
-        imageUrl = await _storage.uploadImage(
-          filePath: imagePath,
+      // Upload all images
+      final imageUrls = <String>[];
+      for (final path in imagePaths) {
+        final url = await _storage.uploadImage(
+          filePath: path,
           userEmail: _currentUserEmail,
         );
+        imageUrls.add(url);
       }
 
       final response = await _client.from(ApiEndpoints.commentsTable).insert({
         'blog_id': blogId,
         'author_id': _currentUserId,
         'content': content,
-        'image_url': imageUrl,
+        'image_url': imageUrls.isNotEmpty ? imageUrls.first : null, // Legacy
+        'image_urls': imageUrls, // New array column
       }).select(_selectWithProfiles).single();
 
       return CommentModel.fromJson(response);
@@ -85,7 +94,7 @@ class CommentsRemoteDataSourceImpl implements CommentsRemoteDataSource {
   @override
   Future<void> deleteComment(String id) async {
     try {
-      // Fetch comment to get image URL before deleting
+      // Fetch comment to get image URLs before deleting
       final response = await _client
           .from(ApiEndpoints.commentsTable)
           .select()
@@ -94,9 +103,9 @@ class CommentsRemoteDataSourceImpl implements CommentsRemoteDataSource {
 
       final comment = CommentModel.fromJson(response);
 
-      // Delete image from storage if exists
-      if (comment.imageUrl != null) {
-        await _storage.deleteImage(comment.imageUrl!);
+      // Delete all images from storage
+      for (final imageUrl in comment.imageUrls) {
+        await _storage.deleteImage(imageUrl);
       }
 
       await _client.from(ApiEndpoints.commentsTable).delete().eq('id', id);

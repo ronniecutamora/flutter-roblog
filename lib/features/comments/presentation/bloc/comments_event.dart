@@ -16,16 +16,16 @@ class LoadCommentsEvent extends CommentsEvent {
 class CreateCommentEvent extends CommentsEvent {
   final String blogId;
   final String content;
-  final String? imagePath;
+  final List<String> imagePaths;
 
   CreateCommentEvent({
     required this.blogId,
     required this.content,
-    this.imagePath,
+    this.imagePaths = const [],
   });
 
   @override
-  List<Object?> get props => [blogId, content, imagePath];
+  List<Object?> get props => [blogId, content, imagePaths];
 }
 
 class DeleteCommentEvent extends CommentsEvent {

@@ -39,7 +39,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     final (_, failure) = await createComment(
       blogId: event.blogId,
       content: event.content,
-      imagePath: event.imagePath,
+      imagePaths: event.imagePaths,
     );
     if (failure != null) {
       emit(CommentsError(message: failure.message));
