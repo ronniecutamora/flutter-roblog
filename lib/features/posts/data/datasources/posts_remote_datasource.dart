@@ -87,11 +87,17 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
       // Upload all pending images and get updated blocks
       final uploadedBlocks = await _uploadPendingImages(contentBlocks);
 
+      // Extract plain text and first image for legacy columns
+      final plainText = _extractPlainText(uploadedBlocks);
+      final firstImageUrl = _extractFirstImageUrl(uploadedBlocks);
+
       final response = await _client
           .from(ApiEndpoints.blogsTable)
           .insert({
             'title': title,
             'author_id': _currentUserId,
+            'content': plainText, // Legacy column (NOT NULL)
+            'image_url': firstImageUrl, // Legacy column
             'content_blocks': ContentBlockModel.toJsonList(uploadedBlocks),
           })
           .select(_selectWithProfiles)
@@ -132,10 +138,16 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
         await _storage.deleteImage(url);
       }
 
+      // Extract plain text and first image for legacy columns
+      final plainText = _extractPlainText(uploadedBlocks);
+      final firstImageUrl = _extractFirstImageUrl(uploadedBlocks);
+
       final response = await _client
           .from(ApiEndpoints.blogsTable)
           .update({
             'title': title,
+            'content': plainText, // Legacy column (NOT NULL)
+            'image_url': firstImageUrl, // Legacy column
             'content_blocks': ContentBlockModel.toJsonList(uploadedBlocks),
             'updated_at': DateTime.now().toIso8601String(),
           })
@@ -196,5 +208,22 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
     }
 
     return result;
+  }
+
+  /// Extracts plain text content from blocks for legacy `content` column.
+  String _extractPlainText(List<ContentBlock> blocks) {
+    return blocks
+        .whereType<TextBlock>()
+        .map((block) => block.text)
+        .join('\n\n');
+  }
+
+  /// Extracts first image URL from blocks for legacy `image_url` column.
+  String? _extractFirstImageUrl(List<ContentBlock> blocks) {
+    final imageBlock = blocks
+        .whereType<ImageBlock>()
+        .where((block) => block.imageUrl != null)
+        .firstOrNull;
+    return imageBlock?.imageUrl;
   }
 }
