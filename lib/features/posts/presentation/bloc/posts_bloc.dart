@@ -71,8 +71,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
 
     final (post, failure) = await _createPost(
       title: event.title,
-      content: event.content,
-      imagePath: event.imagePath,
+      contentBlocks: event.contentBlocks,
     );
 
     if (failure != null) {
@@ -92,8 +91,7 @@ class PostsBloc extends Bloc<PostsEvent, PostsState> {
     final (post, failure) = await _updatePost(
       id: event.id,
       title: event.title,
-      content: event.content,
-      imagePath: event.imagePath,
+      contentBlocks: event.contentBlocks,
     );
 
     if (failure != null) {

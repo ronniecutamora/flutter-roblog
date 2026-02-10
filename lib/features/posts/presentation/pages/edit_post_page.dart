@@ -37,17 +37,15 @@ class EditPostPage extends StatelessWidget {
 
           return PostForm(
             initialTitle: post.title,
-            initialContent: post.content,
-            initialImageUrl: post.imageUrl,
+            initialBlocks: post.contentBlocks,
             submitLabel: AppStrings.save,
             isLoading: isLoading,
-            onSubmit: (title, content, imagePath) {
+            onSubmit: (title, contentBlocks) {
               context.read<PostsBloc>().add(
                     UpdatePostEvent(
                       id: post.id,
                       title: title,
-                      content: content,
-                      imagePath: imagePath,
+                      contentBlocks: contentBlocks,
                     ),
                   );
             },

@@ -1,8 +1,9 @@
 import '../../../../core/errors/failures.dart';
+import '../entities/content_block.dart';
 import '../entities/post.dart';
 import '../repositories/posts_repository.dart';
 
-/// Use case for updating an existing post.
+/// Use case for updating an existing post with block-based content.
 ///
 /// ## Usage
 ///
@@ -11,7 +12,9 @@ import '../repositories/posts_repository.dart';
 /// final (post, failure) = await updatePost(
 ///   id: 'abc-123',
 ///   title: 'Updated Title',
-///   content: 'Updated content...',
+///   contentBlocks: [
+///     TextBlock(id: '1', order: 0, text: 'Updated text'),
+///   ],
 /// );
 /// ```
 class UpdatePost {
@@ -24,19 +27,16 @@ class UpdatePost {
   ///
   /// [id] - Post ID to update
   /// [title] - New title
-  /// [content] - New content
-  /// [imagePath] - Optional new image path
+  /// [contentBlocks] - Updated content blocks
   Future<(Post?, Failure?)> call({
     required String id,
     required String title,
-    required String content,
-    String? imagePath,
+    required List<ContentBlock> contentBlocks,
   }) async {
     return await _repository.updatePost(
       id: id,
       title: title,
-      content: content,
-      imagePath: imagePath,
+      contentBlocks: contentBlocks,
     );
   }
 }

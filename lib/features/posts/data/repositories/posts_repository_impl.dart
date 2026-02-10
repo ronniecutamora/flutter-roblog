@@ -1,5 +1,6 @@
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
+import '../../domain/entities/content_block.dart';
 import '../../domain/entities/post.dart';
 import '../../domain/repositories/posts_repository.dart';
 import '../datasources/posts_remote_datasource.dart';
@@ -41,14 +42,12 @@ class PostsRepositoryImpl implements PostsRepository {
   @override
   Future<(Post?, Failure?)> createPost({
     required String title,
-    required String content,
-    String? imagePath,
+    required List<ContentBlock> contentBlocks,
   }) async {
     try {
       final post = await _remoteDataSource.createPost(
         title: title,
-        content: content,
-        imagePath: imagePath,
+        contentBlocks: contentBlocks,
       );
       return (post, null);
     } on AppAuthException catch (e) {
@@ -64,15 +63,13 @@ class PostsRepositoryImpl implements PostsRepository {
   Future<(Post?, Failure?)> updatePost({
     required String id,
     required String title,
-    required String content,
-    String? imagePath,
+    required List<ContentBlock> contentBlocks,
   }) async {
     try {
       final post = await _remoteDataSource.updatePost(
         id: id,
         title: title,
-        content: content,
-        imagePath: imagePath,
+        contentBlocks: contentBlocks,
       );
       return (post, null);
     } on AppAuthException catch (e) {

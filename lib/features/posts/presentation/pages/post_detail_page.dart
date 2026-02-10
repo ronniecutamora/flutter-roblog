@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/helpers.dart';
+import '../../domain/entities/content_block.dart';
 import '../../domain/entities/post.dart';
 import '../bloc/posts_bloc.dart';
 import '../bloc/posts_event.dart';
@@ -83,26 +84,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ─── Image ──────────────────────────────────────────────────
-              if (_post.imageUrl != null)
-                CachedNetworkImage(
-                  imageUrl: _post.imageUrl!,
-                  height: 250,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    height: 250,
-                    color: Colors.grey[200],
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    height: 250,
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.error),
-                  ),
-                ),
-
-              // ─── Content ────────────────────────────────────────────────
+              // ─── Header ─────────────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -118,62 +100,56 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     ),
                     const SizedBox(height: 8),
 
-                   // Author info row
-                  Row(
-                    children: [
-                      // Author avatar
-                      if (_post.authorAvatarUrl != null)
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundImage: CachedNetworkImageProvider(
-                            _post.authorAvatarUrl!,
+                    // Author info row
+                    Row(
+                      children: [
+                        // Author avatar
+                        if (_post.authorAvatarUrl != null)
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundImage: CachedNetworkImageProvider(
+                              _post.authorAvatarUrl!,
+                            ),
+                          )
+                        else
+                          const CircleAvatar(
+                            radius: 16,
+                            child: Icon(Icons.person, size: 18),
                           ),
-                        )
-                      else
-                        const CircleAvatar(
-                          radius: 16,
-                          child: Icon(Icons.person, size: 18),
-                        ),
-                      const SizedBox(width: 10),
-                      // Author name and date
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_post.authorName != null)
+                        const SizedBox(width: 10),
+                        // Author name and date
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_post.authorName != null)
+                              Text(
+                                _post.authorName!,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                              ),
                             Text(
-                              _post.authorName!,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
+                              Helpers.formatDate(_post.createdAt),
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 12,
                               ),
                             ),
-                          Text(
-                            Helpers.formatDate(_post.createdAt),
-                            style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-
-                    // Content
-                    Text(
-                      _post.content,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        height: 1.6,
-                      ),
+                          ],
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
 
+              // ─── Content Blocks ─────────────────────────────────────────
+              ..._post.contentBlocks.map((block) => _buildContentBlock(block)),
+
               const Divider(),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: CommentsSection(blogId: _post.id),
               ),
               const SizedBox(height: 32),
@@ -182,6 +158,60 @@ class _PostDetailPageState extends State<PostDetailPage> {
         ),
       ),
     );
+  }
+
+  /// Builds a widget for a content block.
+  Widget _buildContentBlock(ContentBlock block) {
+    switch (block) {
+      case TextBlock():
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text(
+            block.text,
+            style: const TextStyle(
+              fontSize: 16,
+              height: 1.6,
+            ),
+          ),
+        );
+      case ImageBlock():
+        if (block.imageUrl == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CachedNetworkImage(
+                imageUrl: block.imageUrl!,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  height: 250,
+                  color: Colors.grey[200],
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 250,
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.error),
+                ),
+              ),
+              if (block.caption != null && block.caption!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Text(
+                    block.caption!,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+    }
   }
 
   /// Shows delete confirmation dialog.

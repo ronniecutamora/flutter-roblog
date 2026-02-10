@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/repositories/storage_repository.dart';
+import '../../domain/entities/content_block.dart';
+import '../models/content_block_model.dart';
 import '../models/post_model.dart';
 
 /// Contract for posts data operations.
@@ -11,14 +13,12 @@ abstract class PostsRemoteDataSource {
   Future<PostModel> getPostById(String id);
   Future<PostModel> createPost({
     required String title,
-    required String content,
-    String? imagePath,
+    required List<ContentBlock> contentBlocks,
   });
   Future<PostModel> updatePost({
     required String id,
     required String title,
-    required String content,
-    String? imagePath,
+    required List<ContentBlock> contentBlocks,
   });
   Future<void> deletePost(String id);
 }
@@ -81,26 +81,18 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
   @override
   Future<PostModel> createPost({
     required String title,
-    required String content,
-    String? imagePath,
+    required List<ContentBlock> contentBlocks,
   }) async {
     try {
-      String? imageUrl;
-
-      if (imagePath != null) {
-        imageUrl = await _storage.uploadImage(
-          filePath: imagePath,
-          userEmail: _currentUserEmail,
-        );
-      }
+      // Upload all pending images and get updated blocks
+      final uploadedBlocks = await _uploadPendingImages(contentBlocks);
 
       final response = await _client
           .from(ApiEndpoints.blogsTable)
           .insert({
             'title': title,
-            'content': content,
             'author_id': _currentUserId,
-            'image_url': imageUrl,
+            'content_blocks': ContentBlockModel.toJsonList(uploadedBlocks),
           })
           .select(_selectWithProfiles)
           .single();
@@ -117,35 +109,36 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
   Future<PostModel> updatePost({
     required String id,
     required String title,
-    required String content,
-    String? imagePath,
+    required List<ContentBlock> contentBlocks,
   }) async {
     try {
-      String? imageUrl;
+      // Fetch existing post to compare images
+      final existingPost = await getPostById(id);
+      final existingImageUrls = existingPost.imageUrls.toSet();
 
-      if (imagePath != null) {
-        // Fetch existing post to get old image URL for upsert
-        final existingPost = await getPostById(id);
-        imageUrl = await _storage.replaceImage(
-          filePath: imagePath,
-          userEmail: _currentUserEmail,
-          oldImageUrl: existingPost.imageUrl,
-        );
-      }
+      // Upload pending images and get updated blocks
+      final uploadedBlocks = await _uploadPendingImages(contentBlocks);
 
-      final updateData = <String, dynamic>{
-        'title': title,
-        'content': content,
-        'updated_at': DateTime.now().toIso8601String(),
-      };
+      // Find new image URLs after upload
+      final newImageUrls = uploadedBlocks
+          .whereType<ImageBlock>()
+          .where((b) => b.imageUrl != null)
+          .map((b) => b.imageUrl!)
+          .toSet();
 
-      if (imageUrl != null) {
-        updateData['image_url'] = imageUrl;
+      // Delete removed images
+      final removedUrls = existingImageUrls.difference(newImageUrls);
+      for (final url in removedUrls) {
+        await _storage.deleteImage(url);
       }
 
       final response = await _client
           .from(ApiEndpoints.blogsTable)
-          .update(updateData)
+          .update({
+            'title': title,
+            'content_blocks': ContentBlockModel.toJsonList(uploadedBlocks),
+            'updated_at': DateTime.now().toIso8601String(),
+          })
           .eq('id', id)
           .select(_selectWithProfiles)
           .single();
@@ -162,12 +155,12 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
   @override
   Future<void> deletePost(String id) async {
     try {
-      // Fetch post to get image URL before deleting
+      // Fetch post to get all image URLs before deleting
       final post = await getPostById(id);
 
-      // Delete image from storage if exists
-      if (post.imageUrl != null) {
-        await _storage.deleteImage(post.imageUrl!);
+      // Delete all images from storage
+      for (final imageUrl in post.imageUrls) {
+        await _storage.deleteImage(imageUrl);
       }
 
       await _client.from(ApiEndpoints.blogsTable).delete().eq('id', id);
@@ -175,5 +168,33 @@ class PostsRemoteDataSourceImpl implements PostsRemoteDataSource {
       if (e is ServerException) rethrow;
       throw ServerException('Failed to delete post: $e');
     }
+  }
+
+  /// Uploads pending images in blocks and returns updated blocks with URLs.
+  Future<List<ContentBlock>> _uploadPendingImages(
+    List<ContentBlock> blocks,
+  ) async {
+    final result = <ContentBlock>[];
+
+    for (final block in blocks) {
+      if (block is ImageBlock && block.hasPendingUpload) {
+        // Upload the local file
+        final imageUrl = await _storage.uploadImage(
+          filePath: block.localPath!,
+          userEmail: _currentUserEmail,
+        );
+        // Replace block with uploaded URL
+        result.add(ImageBlock(
+          id: block.id,
+          order: block.order,
+          imageUrl: imageUrl,
+          caption: block.caption,
+        ));
+      } else {
+        result.add(block);
+      }
+    }
+
+    return result;
   }
 }

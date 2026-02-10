@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../domain/entities/content_block.dart';
+
 /// Base class for all posts events.
 ///
 /// Events represent user actions that the [PostsBloc] responds to.
@@ -17,28 +19,24 @@ class LoadPostsEvent extends PostsEvent {
   const LoadPostsEvent();
 }
 
-/// Event to create a new post.
+/// Event to create a new post with block-based content.
 class CreatePostEvent extends PostsEvent {
   /// Post title.
   final String title;
 
-  /// Post content.
-  final String content;
-
-  /// Optional local image path.
-  final String? imagePath;
+  /// Content blocks (text and images).
+  final List<ContentBlock> contentBlocks;
 
   const CreatePostEvent({
     required this.title,
-    required this.content,
-    this.imagePath,
+    required this.contentBlocks,
   });
 
   @override
-  List<Object?> get props => [title, content, imagePath];
+  List<Object?> get props => [title, contentBlocks];
 }
 
-/// Event to update an existing post.
+/// Event to update an existing post with block-based content.
 class UpdatePostEvent extends PostsEvent {
   /// Post ID to update.
   final String id;
@@ -46,21 +44,17 @@ class UpdatePostEvent extends PostsEvent {
   /// New title.
   final String title;
 
-  /// New content.
-  final String content;
-
-  /// Optional new image path.
-  final String? imagePath;
+  /// Updated content blocks.
+  final List<ContentBlock> contentBlocks;
 
   const UpdatePostEvent({
     required this.id,
     required this.title,
-    required this.content,
-    this.imagePath,
+    required this.contentBlocks,
   });
 
   @override
-  List<Object?> get props => [id, title, content, imagePath];
+  List<Object?> get props => [id, title, contentBlocks];
 }
 
 /// Event to delete a post.

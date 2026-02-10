@@ -1,8 +1,9 @@
 import '../../../../core/errors/failures.dart';
+import '../entities/content_block.dart';
 import '../entities/post.dart';
 import '../repositories/posts_repository.dart';
 
-/// Use case for creating a new post.
+/// Use case for creating a new post with block-based content.
 ///
 /// ## Usage
 ///
@@ -10,8 +11,10 @@ import '../repositories/posts_repository.dart';
 /// final createPost = CreatePost(postsRepository);
 /// final (post, failure) = await createPost(
 ///   title: 'My Post',
-///   content: 'Post content...',
-///   imagePath: '/path/to/image.jpg',
+///   contentBlocks: [
+///     TextBlock(id: '1', order: 0, text: 'Hello world'),
+///     ImageBlock(id: '2', order: 1, localPath: '/path/to/image.jpg'),
+///   ],
 /// );
 /// ```
 class CreatePost {
@@ -23,17 +26,14 @@ class CreatePost {
   /// Executes the use case.
   ///
   /// [title] - Post title
-  /// [content] - Post body
-  /// [imagePath] - Optional local image path
+  /// [contentBlocks] - List of content blocks (text/image)
   Future<(Post?, Failure?)> call({
     required String title,
-    required String content,
-    String? imagePath,
+    required List<ContentBlock> contentBlocks,
   }) async {
     return await _repository.createPost(
       title: title,
-      content: content,
-      imagePath: imagePath,
+      contentBlocks: contentBlocks,
     );
   }
 }

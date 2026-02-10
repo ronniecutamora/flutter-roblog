@@ -29,9 +29,9 @@ class PostCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (post.imageUrl != null)
+            if (post.thumbnailUrl != null)
               CachedNetworkImage(
-                imageUrl: post.imageUrl!,
+                imageUrl: post.thumbnailUrl!,
                 height: 200,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -81,7 +81,7 @@ class PostCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    post.content,
+                    post.plainTextContent,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: Colors.grey[600]),

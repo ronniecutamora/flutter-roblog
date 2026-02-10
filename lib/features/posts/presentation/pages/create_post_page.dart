@@ -36,12 +36,11 @@ class CreatePostPage extends StatelessWidget {
           return PostForm(
             submitLabel: AppStrings.createPost,
             isLoading: isLoading,
-            onSubmit: (title, content, imagePath) {
+            onSubmit: (title, contentBlocks) {
               context.read<PostsBloc>().add(
                     CreatePostEvent(
                       title: title,
-                      content: content,
-                      imagePath: imagePath,
+                      contentBlocks: contentBlocks,
                     ),
                   );
             },

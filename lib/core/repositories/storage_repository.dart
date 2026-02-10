@@ -22,11 +22,10 @@ abstract class StorageRepository {
   /// Fails silently if deletion fails to avoid blocking operations.
   Future<void> deleteImage(String imageUrl);
 
-  /// Replaces an existing image by uploading to the same path (upsert).
+  /// Replaces an existing image by deleting old and uploading new.
   ///
-  /// If [oldImageUrl] is provided, extracts the path and uploads to the same
-  /// location, overwriting the existing file. If extension differs, deletes
-  /// old file and creates new path.
+  /// If [oldImageUrl] is provided, deletes the old image first,
+  /// then uploads the new image with a fresh path.
   ///
   /// If [oldImageUrl] is null, creates a new file.
   ///
