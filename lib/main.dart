@@ -9,6 +9,7 @@ import 'core/constants/app_strings.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/posts/presentation/bloc/posts_bloc.dart';
+import 'package:flutter_roblog/core/config/environment.dart';
 
 /// Application entry point.
 void main() async {
